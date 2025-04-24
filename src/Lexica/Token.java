@@ -1,20 +1,27 @@
 public class Token {
-    private String tipo; // Ex: "IDENTIFICADOR", "PALAVRA_RESERVADA", "OPERADOR"
-    private String lexema; // O texto real encontrado no código
-    private int linha; // Linha onde o token foi encontrado
+    private String nome; 
+    private String tipo; 
+    private String classificacao;
+    private int linha;
+    private int coluna;
 
-    public Token(String tipo, String lexema, int linha) {
+
+    public Token(String nome, String tipo, String classificacao, int linha, int coluna) {
+        this.nome = nome;
         this.tipo = tipo;
-        this.lexema = lexema;
+        this.classificacao = classificacao;
         this.linha = linha;
+        this.coluna = coluna;
     }
-
+    public String getNome() { return nome; }
     public String getTipo() { return tipo; }
-    public String getLexema() { return lexema; }
+    public String getClassificacao() { return classificacao; }
     public int getLinha() { return linha; }
+    public int getColuna() { return coluna; }
 
     @Override
     public String toString() {
-        return String.format("Token{tipo='%s', lexema='%s', linha=%d}", tipo, lexema, linha);
+        return String.format("Nome: %s, Classificacao: %s, Tipo: %s, Linha: %d, Coluna: %d]", this.nome, this.classificacao,
+                this.tipo, this.linha, this.coluna);
     }
 }
