@@ -1,11 +1,11 @@
 package com.compilador.Lexica;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.compilador.Execptions.ErroLexico;
 import com.compilador.Execptions.ExcecaoCompilador;
 import com.compilador.Table.TabelaSimbolos;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Analisador {
 
@@ -59,7 +59,7 @@ public class Analisador {
                 tabela.addToken(new Token(lexema, categoria, "NULL", linha, coluna));
                 houveReconhecimento = true;
             } else {
-                ErroLexico.gerarErro(String.valueOf(linhaCodigo.charAt(0)), linha, coluna);
+                ErroLexico.erroLexico(String.valueOf(linhaCodigo.charAt(0)), linha, coluna);
             }
 
             if (houveReconhecimento) {

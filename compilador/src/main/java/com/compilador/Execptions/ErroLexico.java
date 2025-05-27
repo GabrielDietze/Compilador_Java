@@ -3,92 +3,92 @@ package com.compilador.Execptions;
 import com.compilador.Lexica.Token;
 
 public class ErroLexico {
-    
-    public static void lexicalError(String lexeme, int line, int column) throws ExcecaoCompilador {
-    throw new ExcecaoCompilador(buildLexicalMessage(lexeme, line, column));
-}
 
-public static void syntaxError(String expected, Token found) throws ExcecaoCompilador {
-    throw new ExcecaoCompilador(buildSyntaxMessage(expected, found));
-}
+    public static void erroLexico(String lexema, int linha, int coluna) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroLexico(lexema, linha, coluna));
+    }
 
-public static void syntaxErrorAssignment(Token found) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(buildSyntaxAssignmentMessage(found));
-}
+    public static void erroSintatico(String esperado, Token encontrado) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSintatico(esperado, encontrado));
+    }
 
-public static void semanticErrorAssignment(Token wrongToken, Token declaredToken) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(buildSemanticAssignmentMessage(wrongToken, declaredToken));
-}
+    public static void erroSintaticoAtribuicao(Token encontrado) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSintaticoAtribuicao(encontrado));
+    }
 
-public static void semanticErrorNotDeclared(Token token) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(buildSemanticNotDeclaredMessage(token));
-}
+    public static void erroSemanticoAtribuicao(Token tokenIncorreto, Token tokenDeclarado) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSemanticoAtribuicao(tokenIncorreto, tokenDeclarado));
+    }
 
-public static void semanticErrorBadComparation(Token token, String expectedType) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(buildSemanticBadComparationMessage(token, expectedType));
-}
+    public static void erroSemanticoNaoDeclarado(Token token) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSemanticoNaoDeclarado(token));
+    }
 
-public static void semanticErrorInvalidExpression(String expectedType, String actualType, Token token) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(buildSemanticInvalidExpressionMessage(expectedType, actualType, token));
-}
+    public static void erroSemanticoComparacaoInvalida(Token token, String tipoEsperado) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSemanticoComparacaoInvalida(token, tipoEsperado));
+    }
 
-public static void semanticErrorInvalidToken(Token token) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(
-            "Erro Semântico: expressão inválida com o token '" + token.getName() +
-                    "' na linha " + token.getLine() + ", coluna " + token.getColumn() + "."
-    );
-}
+    public static void erroSemanticoExpressaoInvalida(String tipoEsperado, String tipoRecebido, Token token) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(mensagemErroSemanticoExpressaoInvalida(tipoEsperado, tipoRecebido, token));
+    }
 
-public static void semanticErrorExpectedOperandAfter(String operator, Token token) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(
-            "Erro Semântico: era esperado um operando após o operador '" + operator +
-                    "' na linha " + token.getLine() + ", coluna " + token.getColumn() + "."
-    );
-}
+    public static void erroSemanticoTokenInvalido(Token token) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(
+                "Erro Semântico: expressão inválida com o token '" + token.getNome() +
+                "' na linha " + token.getLinha() + ", coluna " + token.getColuna() + "."
+        );
+    }
 
-public static void semanticErrorInvalidExpressionAfterControl(Token token) throws ExcecaoCompilador{
-    throw new ExcecaoCompilador(
-            "Erro Semântico: expressão inválida após comando de controle (if/while), token '" + token.getName() +
-                    "' na linha " + token.getLine() + ", coluna " + token.getColumn() + "."
-    );
-}
+    public static void erroSemanticoOperandoEsperadoApos(String operador, Token token) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(
+                "Erro Semântico: era esperado um operando após o operador '" + operador +
+                "' na linha " + token.getLinha() + ", coluna " + token.getColuna() + "."
+        );
+    }
 
-private static String buildLexicalMessage(String lexeme, int line, int column) {
-    return "Erro Léxico: token não reconhecido '" + lexeme + "' na linha " + line + ", coluna " + column + ".";
-}
+    public static void erroSemanticoExpressaoInvalidaAposControle(Token token) throws ExcecaoCompilador {
+        throw new ExcecaoCompilador(
+                "Erro Semântico: expressão inválida após comando de controle (if/while), token '" + token.getNome() +
+                "' na linha " + token.getLinha() + ", coluna " + token.getColuna() + "."
+        );
+    }
 
-private static String buildSyntaxMessage(String expected, Token found) {
-    return "Erro Sintático: era esperado '" + expected + "', mas encontrado '" +
-            found.getName() + "' na linha " + found.getLine() + ", coluna " + found.getColumn() + ".";
-}
+    // MÉTODOS AUXILIARES (mensagens)
 
-private static String buildSyntaxAssignmentMessage(Token found) {
-    return "Erro Sintático: era esperada uma atribuição de valor (de variável ou literal), mas encontrado '" +
-            found.getName() + "' na linha " + found.getLine() + ", coluna " + found.getColumn() + ".";
-}
+    private static String mensagemErroLexico(String lexema, int linha, int coluna) {
+        return "Erro Léxico: token não reconhecido '" + lexema + "' na linha " + linha + ", coluna " + coluna + ".";
+    }
 
-private static String buildSemanticAssignmentMessage(Token wrongToken, Token declaredToken) {
-    return "Erro Semântico: atribuição incorreta! Foi atribuído um valor do tipo '" + wrongToken.getType() +
-            "' à variável '" + declaredToken.getName() +
-            "', mas era esperado o tipo '" + declaredToken.getType() +
-            "'. Linha " + wrongToken.getLine() + ", coluna " + wrongToken.getColumn() + ".";
-}
+    private static String mensagemErroSintatico(String esperado, Token encontrado) {
+        return "Erro Sintático: era esperado '" + esperado + "', mas encontrado '" +
+                encontrado.getNome() + "' na linha " + encontrado.getLinha() + ", coluna " + encontrado.getColuna() + ".";
+    }
 
-private static String buildSemanticNotDeclaredMessage(Token token) {
-    return "Erro Semântico: a variável '" + token.getName() + "' não foi declarada. Linha " +
-            token.getLine() + ", coluna " + token.getColumn() + ".";
-}
+    private static String mensagemErroSintaticoAtribuicao(Token encontrado) {
+        return "Erro Sintático: era esperada uma atribuição de valor (de variável ou literal), mas encontrado '" +
+                encontrado.getNome() + "' na linha " + encontrado.getLinha() + ", coluna " + encontrado.getColuna() + ".";
+    }
 
-private static String buildSemanticBadComparationMessage(Token token, String expectedType) {
-    return "Erro Semântico: não é possível comparar um valor do tipo '" + token.getType() +
-            "' com um valor do tipo '" + expectedType + "'. Linha " + token.getLine() +
-            ", coluna " + token.getColumn() + ".";
-}
+    private static String mensagemErroSemanticoAtribuicao(Token tokenIncorreto, Token tokenDeclarado) {
+        return "Erro Semântico: atribuição incorreta! Foi atribuído um valor do tipo '" + tokenIncorreto.getTipo() +
+                "' à variável '" + tokenDeclarado.getNome() +
+                "', mas era esperado o tipo '" + tokenDeclarado.getTipo() +
+                "'. Linha " + tokenIncorreto.getLinha() + ", coluna " + tokenIncorreto.getColuna() + ".";
+    }
 
-private static String buildSemanticInvalidExpressionMessage(String expectedType, String invalidType, Token token) {
-    return "Erro Semântico: operação inválida! Era esperado um tipo '" + expectedType +
-            "', mas foi utilizado um tipo '" + invalidType + "'. Linha " + token.getLine() + ".";
-}
+    private static String mensagemErroSemanticoNaoDeclarado(Token token) {
+        return "Erro Semântico: a variável '" + token.getNome() + "' não foi declarada. Linha " +
+                token.getLinha() + ", coluna " + token.getColuna() + ".";
+    }
 
+    private static String mensagemErroSemanticoComparacaoInvalida(Token token, String tipoEsperado) {
+        return "Erro Semântico: não é possível comparar um valor do tipo '" + token.getTipo() +
+                "' com um valor do tipo '" + tipoEsperado + "'. Linha " + token.getLinha() +
+                ", coluna " + token.getColuna() + ".";
+    }
 
+    private static String mensagemErroSemanticoExpressaoInvalida(String tipoEsperado, String tipoRecebido, Token token) {
+        return "Erro Semântico: operação inválida! Era esperado um tipo '" + tipoEsperado +
+                "', mas foi utilizado um tipo '" + tipoRecebido + "'. Linha " + token.getLinha() + ".";
+    }
 }
