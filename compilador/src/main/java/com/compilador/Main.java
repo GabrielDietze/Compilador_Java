@@ -3,7 +3,7 @@ import com.compilador.Lexica.Token;
 import com.compilador.Table.TabelaSimbolos;
 
 
-public class App 
+public class Main 
 {
     public static void main( String[] args )
     {
