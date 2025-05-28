@@ -15,7 +15,7 @@ public class TabelaSimbolos {
 
     private final ArrayList<Token> tabelaSimbolos = new ArrayList<>(); // Lista de tokens
 
-    public Token currentToken(int index){
+    public Token tokenAtual(int index){
         return this.tabelaSimbolos.get(index);
     }
 
@@ -23,11 +23,11 @@ public class TabelaSimbolos {
         this.tabelaSimbolos.add(token);
     }
 
-    public boolean isPalavraReservada(String palavra) {
+    public boolean palavraReservada(String palavra) {
         return palavrasReservadas.contains(palavra);
     }
 
-    public int getSize() {
+    public int tamanho() {
         return this.tabelaSimbolos.size();
     }
 

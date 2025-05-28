@@ -24,7 +24,7 @@ public class Token {
 
     @Override
     public String toString() {
-        return String.format("Nome: %s, Classificacao: %s, Tipo: %s, Linha: %d, Coluna: %d]", this.nome, this.classificacao,
+        return String.format("Nome: %s, Classificacao: %s, Tipo: %s, Linha: %d, Coluna: %d", this.nome, this.classificacao,
                 this.tipo, this.linha, this.coluna);
     }
 }

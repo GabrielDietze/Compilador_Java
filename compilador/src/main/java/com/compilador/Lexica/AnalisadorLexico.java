@@ -7,7 +7,7 @@ import com.compilador.Execptions.ErroLexico;
 import com.compilador.Execptions.ExcecaoCompilador;
 import com.compilador.Table.TabelaSimbolos;
 
-public class Analisador {
+public class AnalisadorLexico {
 
     private final TabelaSimbolos tabela;
 
@@ -21,7 +21,7 @@ public class Analisador {
     private final Pattern padraoStrings = Pattern.compile("\"([^\"\\\\]|\\\\.)*\"");
     private final Pattern padraoEspacos = Pattern.compile("\\s+");
 
-    public Analisador(TabelaSimbolos tabela) {
+    public AnalisadorLexico(TabelaSimbolos tabela) {
         this.tabela = tabela;
     }
 
@@ -29,33 +29,43 @@ public class Analisador {
         int coluna = 1;
         linhaCodigo = linhaCodigo.stripLeading();
 
+        System.out.println("Analisando linha " + linha + ": " + linhaCodigo);
+
         while (!linhaCodigo.isEmpty()) {
             Matcher m;
             boolean houveReconhecimento = false;
 
             m = ignorarEspacosOuComentarios(linhaCodigo);
             if (m != null) {
+                System.out.println("Ignorando espaços ou comentário: '" + linhaCodigo.substring(0, m.end()) + "'");
+                // Ignora espaços e comentários
                 coluna += m.end();
                 linhaCodigo = linhaCodigo.substring(m.end()).stripLeading();
                 continue;
             }
 
             if ((m = padraoBooleanos.matcher(linhaCodigo)).lookingAt()) {
+                String valor = valorBooleano(m.group());
+                System.out.println("Token booleano encontrado: " + m.group() + " -> " + valor);
+                // Converte "true" e "false" para seus equivalentes hexadecimais
                 tabela.addToken(new Token(valorBooleano(m.group()), "CONST", "boolean", linha, coluna));
                 houveReconhecimento = true;
             } else if ((m = padraoStrings.matcher(linhaCodigo)).lookingAt()) {
+                System.out.println("Token string encontrado: " + m.group());
                 tabela.addToken(new Token(m.group(), "CONST", "string", linha, coluna));
                 houveReconhecimento = true;
             } else if ((m = padraoHexa.matcher(linhaCodigo)).lookingAt()) {
+                System.out.println("Token hexadecimal encontrado: " + m.group());
                 tabela.addToken(new Token(m.group(), "CONST", "byte", linha, coluna));
                 houveReconhecimento = true;
             } else if ((m = padraoNumeros.matcher(linhaCodigo)).lookingAt()) {
+                System.out.println("Token número encontrado: " + m.group());
                 tabela.addToken(new Token(m.group(), "CONST", "int", linha, coluna));
                 houveReconhecimento = true;
             } else if ((m = verificarIdentificadorOuSimbolo(linhaCodigo)) != null) {
                 String lexema = m.group();
-                String categoria = tabela.isPalavraReservada(lexema) ? "RESERVADA" : "ID";
-
+                String categoria = tabela.palavraReservada(lexema) ? "RESERVADA" : "ID";
+                System.out.println("Token identificado: " + lexema + " Categoria: " + categoria);
                 tabela.addToken(new Token(lexema, categoria, "NULL", linha, coluna));
                 houveReconhecimento = true;
             } else {
@@ -73,7 +83,9 @@ public class Analisador {
     // Ignora espaços e comentários no código
     private Matcher ignorarEspacosOuComentarios(String codigo) {
         Matcher m = padraoEspacos.matcher(codigo);
-        if (m.lookingAt()) return m;
+        if (m.lookingAt()) {
+            return m;
+        }
         m = padraoComentarios.matcher(codigo);
         return m.lookingAt() ? m : null;
     }
@@ -81,9 +93,13 @@ public class Analisador {
     // Identifica identificadores, operadores ou delimitadores
     private Matcher verificarIdentificadorOuSimbolo(String codigo) {
         Matcher m = padraoIdentificadores.matcher(codigo);
-        if (m.lookingAt()) return m;
+        if (m.lookingAt()) {
+            return m;
+        }
         m = padraoOperadores.matcher(codigo);
-        if (m.lookingAt()) return m;
+        if (m.lookingAt()) {
+            return m;
+        }
         m = padraoDelimitadores.matcher(codigo);
         return m.lookingAt() ? m : null;
     }
