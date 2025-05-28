@@ -220,7 +220,7 @@ public class AnalisadorSintatico {
     }
 
     private boolean isConstante() {
-        return tokenAtual != null && tokenAtual.getClassificacao().equals("CONST");
+        return tokenAtual != null && tokenAtual.getTipo().equals("CONST");
     }
 
     private boolean isOperadorLogico() {

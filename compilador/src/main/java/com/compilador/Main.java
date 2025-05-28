@@ -4,6 +4,7 @@ import com.compilador.Lexica.AnalisadorLexico;
 import com.compilador.Sintatica.AnalisadorSintatico;
 import com.compilador.Table.TabelaSimbolos;
 import com.compilador.Utils.LerLCCode;
+import com.compilador.Semantica.AnalisadorSemantico;
 
 public class Main {
     
@@ -33,11 +34,11 @@ public class Main {
             parser.analisarPrograma();
             System.out.println("Análise sintática finalizada.");
 
-            // // Realiza análise semântica
-            // AnalisadorSemantico semantico = new AnalisadorSemantico(tabela);
-            // System.out.println("==> Iniciando análise semântica...");
-            // semantico.analisar();
-            // System.out.println("Análise semântica finalizada.");
+            // Realiza análise semântica
+            AnalisadorSemantico semantico = new AnalisadorSemantico(tabela);
+            System.out.println("==> Iniciando análise semântica...");
+            semantico.AnalisadorSemantico( );
+            System.out.println("Análise semântica finalizada.");
 
             // // Gera código assembly
             // GeradorAssembly gerador = new GeradorAssembly(tabela, nomeArquivo);

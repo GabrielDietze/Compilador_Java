@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 import com.compilador.Execptions.ErroLexico;
 import com.compilador.Execptions.ExcecaoCompilador;
 import com.compilador.Table.TabelaSimbolos;
+// Se você tiver uma classe Token, importe-a aqui. Ex:
+// import com.compilador.Table.Token; // ou o caminho correto para sua classe Token
 
 public class AnalisadorLexico {
 
@@ -17,7 +19,7 @@ public class AnalisadorLexico {
     private final Pattern padraoBooleanos = Pattern.compile("true|false");
     private final Pattern padraoOperadores = Pattern.compile("==|<>|<=|>=|<|>|[+\\-*/=]");
     private final Pattern padraoDelimitadores = Pattern.compile("[,;()]");
-    private final Pattern padraoComentarios = Pattern.compile("/\\*(.|\\R)*?\\*/|\\{[^}]*\\}");
+    private final Pattern padraoComentarios = Pattern.compile("/\\*(.|\\R)*?\\*/|\\{[^}]*\\}|//.*");
     private final Pattern padraoStrings = Pattern.compile("\"([^\"\\\\]|\\\\.)*\"");
     private final Pattern padraoEspacos = Pattern.compile("\\s+");
 
@@ -27,55 +29,64 @@ public class AnalisadorLexico {
 
     public void executarAnalise(String linhaCodigo, int linha) throws ExcecaoCompilador {
         int coluna = 1;
-        linhaCodigo = linhaCodigo.stripLeading();
+        // linhaCodigo = linhaCodigo.stripLeading(); // stripLeading no início da linha pode ser suficiente
 
         System.out.println("Analisando linha " + linha + ": " + linhaCodigo);
 
-        while (!linhaCodigo.isEmpty()) {
+        String codigoRestante = linhaCodigo.stripLeading(); // Processa a linha a partir daqui
+
+        while (!codigoRestante.isEmpty()) {
             Matcher m;
             boolean houveReconhecimento = false;
+            int colunaInicioToken = linhaCodigo.length() - codigoRestante.length() + 1;
 
-            m = ignorarEspacosOuComentarios(linhaCodigo);
+
+            m = ignorarEspacosOuComentarios(codigoRestante);
             if (m != null) {
-                System.out.println("Ignorando espaços ou comentário: '" + linhaCodigo.substring(0, m.end()) + "'");
-                // Ignora espaços e comentários
-                coluna += m.end();
-                linhaCodigo = linhaCodigo.substring(m.end()).stripLeading();
+                System.out.println("Ignorando espaços ou comentário: '" + codigoRestante.substring(0, m.end()) + "'");
+                codigoRestante = codigoRestante.substring(m.end()).stripLeading();
                 continue;
             }
 
-            if ((m = padraoBooleanos.matcher(linhaCodigo)).lookingAt()) {
-                String valor = valorBooleano(m.group());
-                System.out.println("Token booleano encontrado: " + m.group() + " -> " + valor);
-                // Converte "true" e "false" para seus equivalentes hexadecimais
-                tabela.addToken(new Token(valorBooleano(m.group()), "CONST", "boolean", linha, coluna));
+            if ((m = padraoBooleanos.matcher(codigoRestante)).lookingAt()) {
+                String lexemaOriginal = m.group();
+                String valorHex = valorBooleano(lexemaOriginal);
+                System.out.println("Token booleano encontrado: " + lexemaOriginal + " -> " + valorHex);
+                // Assumindo construtor Token(nome, tipo, classificacao, linha, coluna)
+                tabela.addToken(new Token(valorHex, "CONST", "boolean", linha, colunaInicioToken));
                 houveReconhecimento = true;
-            } else if ((m = padraoStrings.matcher(linhaCodigo)).lookingAt()) {
-                System.out.println("Token string encontrado: " + m.group());
-                tabela.addToken(new Token(m.group(), "CONST", "string", linha, coluna));
+            } else if ((m = padraoStrings.matcher(codigoRestante)).lookingAt()) {
+                String lexema = m.group();
+                System.out.println("Token string encontrado: " + lexema);
+                tabela.addToken(new Token(lexema, "CONST", "string", linha, colunaInicioToken));
                 houveReconhecimento = true;
-            } else if ((m = padraoHexa.matcher(linhaCodigo)).lookingAt()) {
-                System.out.println("Token hexadecimal encontrado: " + m.group());
-                tabela.addToken(new Token(m.group(), "CONST", "byte", linha, coluna));
+            } else if ((m = padraoHexa.matcher(codigoRestante)).lookingAt()) {
+                String lexema = m.group();
+                System.out.println("Token hexadecimal encontrado: " + lexema);
+                tabela.addToken(new Token(lexema, "CONST", "byte", linha, colunaInicioToken));
                 houveReconhecimento = true;
-            } else if ((m = padraoNumeros.matcher(linhaCodigo)).lookingAt()) {
-                System.out.println("Token número encontrado: " + m.group());
-                tabela.addToken(new Token(m.group(), "CONST", "int", linha, coluna));
+            } else if ((m = padraoNumeros.matcher(codigoRestante)).lookingAt()) {
+                String lexema = m.group();
+                System.out.println("Token número encontrado: " + lexema);
+                tabela.addToken(new Token(lexema, "CONST", "int", linha, colunaInicioToken));
                 houveReconhecimento = true;
-            } else if ((m = verificarIdentificadorOuSimbolo(linhaCodigo)) != null) {
+            } else if ((m = verificarIdentificadorOuSimbolo(codigoRestante)) != null) {
                 String lexema = m.group();
                 String categoria = tabela.palavraReservada(lexema) ? "RESERVADA" : "ID";
                 System.out.println("Token identificado: " + lexema + " Categoria: " + categoria);
-                tabela.addToken(new Token(lexema, categoria, "NULL", linha, coluna));
+                // LINHA CORRIGIDA:
+                tabela.addToken(new Token(lexema, categoria, categoria, linha, colunaInicioToken));
                 houveReconhecimento = true;
             } else {
-                ErroLexico.erroLexico(String.valueOf(linhaCodigo.charAt(0)), linha, coluna);
+                // Calcula a coluna do erro com base no código original da linha
+                ErroLexico.erroLexico(String.valueOf(codigoRestante.charAt(0)), linha, colunaInicioToken);
             }
 
             if (houveReconhecimento) {
                 int tamConsumido = m.end();
-                coluna += tamConsumido;
-                linhaCodigo = linhaCodigo.substring(tamConsumido).stripLeading();
+                codigoRestante = codigoRestante.substring(tamConsumido).stripLeading();
+            } else if (codigoRestante.isEmpty()) { // Evita loop infinito se nada for reconhecido mas a linha não estiver vazia (deve ser tratado pelo erro lexico)
+                break; 
             }
         }
     }

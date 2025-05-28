@@ -32,7 +32,7 @@ public class ErroLexico {
         throw new ExcecaoCompilador(mensagemErroSemanticoExpressaoInvalida(tipoEsperado, tipoRecebido, token));
     }
 
-    public static void erroSemanticoTokenInvalido(Token token) throws ExcecaoCompilador {
+    public static void erroSemanticoTookenInvalido(Token token) throws ExcecaoCompilador {
         throw new ExcecaoCompilador(
                 "Erro Semântico: expressão inválida com o token '" + token.getNome() +
                 "' na linha " + token.getLinha() + ", coluna " + token.getColuna() + "."
