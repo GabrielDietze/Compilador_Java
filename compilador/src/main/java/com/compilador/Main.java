@@ -1,10 +1,10 @@
 package com.compilador;
 
 import com.compilador.Lexica.AnalisadorLexico;
+import com.compilador.Semantica.AnalisadorSemantico;
 import com.compilador.Sintatica.AnalisadorSintatico;
 import com.compilador.Table.TabelaSimbolos;
 import com.compilador.Utils.LerLCCode;
-import com.compilador.Semantica.AnalisadorSemantico;
 
 public class Main {
     
@@ -13,9 +13,9 @@ public class Main {
         String caminhoArquivo = "C:\\Users\\Gabri\\Desktop\\COMPILADOR_JAVA\\compilador\\src\\main\\java\\com\\compilador\\Codigos\\Main.lc";
         System.out.println("Abrindo arquivo: " + caminhoArquivo);
 
-        // Extrai nome do arquivo (sem extensão) para uso posterior
-        String nomeArquivo = caminhoArquivo.substring(caminhoArquivo.lastIndexOf("\\") + 1);
-        nomeArquivo = nomeArquivo.substring(0, nomeArquivo.lastIndexOf("."));
+        // // Extrai nome do arquivo (sem extensão) para uso posterior
+        // String nomeArquivo = caminhoArquivo.substring(caminhoArquivo.lastIndexOf("\\") + 1);
+        // nomeArquivo = nomeArquivo.substring(0, nomeArquivo.lastIndexOf("."));
         
         // Instancia tabela de símbolos
         TabelaSimbolos tabela = new TabelaSimbolos();
@@ -37,7 +37,7 @@ public class Main {
             // Realiza análise semântica
             AnalisadorSemantico semantico = new AnalisadorSemantico(tabela);
             System.out.println("==> Iniciando análise semântica...");
-            semantico.AnalisadorSemantico( );
+            semantico.executarVerificacaoSemanticaCompleta();
             System.out.println("Análise semântica finalizada.");
 
             // // Gera código assembly

@@ -1,13 +1,13 @@
 package com.compilador.Semantica;
 
+import java.util.HashMap;
+import java.util.Map; // Sua classe de tratamento de erros
+import java.util.Set;
+
+import com.compilador.Execptions.ErroLexico;
 import com.compilador.Execptions.ExcecaoCompilador;
-import com.compilador.Execptions.ErroLexico; // Sua classe de tratamento de erros
 import com.compilador.Lexica.Token;
 import com.compilador.Table.TabelaSimbolos;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class AnalisadorSemantico {
 
@@ -49,6 +49,67 @@ public class AnalisadorSemantico {
             tokenEmAnalise = this.tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual);
         }
     }
+
+private void processarInstrucaoWrite() throws ExcecaoCompilador {
+    Token instrucaoWriteToken = tokenEmAnalise; // Para mensagens de erro contextualizadas
+    consumirProximoToken(); // Consome a palavra-chave 'write'
+
+    boolean temParentesesAbertura = false;
+    if (tokenEmAnalise != null && "(".equals(tokenEmAnalise.getNome())) {
+        temParentesesAbertura = true;
+        consumirProximoToken(); // Consome '('
+    }
+    // Se não houver '(', a próxima coisa deve ser o início de uma expressão.
+
+    // Verifica se há pelo menos uma expressão para escrever
+    if (tokenEmAnalise == null) {
+        ErroLexico.erroSintatico("Expressão ou '(' após '" + instrucaoWriteToken.getNome() + "'", instrucaoWriteToken);
+        return; // Ou lançar a exceção para parar a análise
+    }
+    // A chamada a resolverTipoDeExpressao abaixo verificará se o token atual pode iniciar uma expressão.
+
+    // Processa a primeira expressão
+    // O contexto "QUALQUER_TIPO_VALIDO_PARA_WRITE" pode ser usado para checagens futuras se necessário.
+    resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE");
+    // TODO: Opcionalmente, valide aqui se o tipo retornado é permitido para 'write'.
+
+    // Loop para processar expressões subsequentes separadas por vírgula
+    while (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
+        consumirProximoToken(); // <<< ETAPA CRUCIAL: Consome a vírgula ','
+
+        if (tokenEmAnalise == null) { // Verifica se há uma expressão após a vírgula
+            // Pega o token anterior (a vírgula) para a mensagem de erro, se possível
+            Token tokenReferenciaErro = (ponteiroParaTokenAtual > 0 && 
+                                       tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1).getNome().equals(",")) ?
+                                       tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1) : instrucaoWriteToken;
+            ErroLexico.erroSintatico("Expressão após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", tokenReferenciaErro);
+            return;
+        }
+        
+        resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE"); // Processa a próxima expressão
+        // TODO: Opcionalmente, valide o tipo retornado aqui também.
+    }
+
+    if (temParentesesAbertura) {
+        if (tokenEmAnalise == null || !")".equals(tokenEmAnalise.getNome())) {
+            // Se esperava ')' mas encontrou outra coisa (ou fim de arquivo), ou se esperava mais expressões (vírgula)
+            ErroLexico.erroSintatico("')' ou ',' após expressão na instrução '" + instrucaoWriteToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
+            // Considere tentar se recuperar ou parar
+        } else {
+            consumirProximoToken(); // Consome ')'
+        }
+    }
+
+    // Espera-se um ponto e vírgula para finalizar a instrução
+    if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
+        ErroLexico.erroSintatico("';' para finalizar a instrução '" + instrucaoWriteToken.getNome() + "'",
+                                tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
+        // Considere tentar se recuperar ou parar
+    } else {
+        consumirProximoToken(); // Consome o ';'
+    }
+}
 
     private boolean ehPalavraChaveDeTipo(Token token) {
         return token != null && PALAVRAS_CHAVE_DE_TIPO.contains(token.getNome().toLowerCase());
@@ -125,148 +186,169 @@ public class AnalisadorSemantico {
     }
 
     private void processarBlocoDeDeclaracoes() throws ExcecaoCompilador {
-        while (tokenEmAnalise != null && (ehPalavraChaveDeTipo(tokenEmAnalise) || "final".equals(tokenEmAnalise.getNome()))) {
-            String tipoBase = tokenEmAnalise.getNome();
-            Token tokenTipoBase = tokenEmAnalise; // Guardar para referência de linha/coluna
-            consumirProximoToken();
+    while (tokenEmAnalise != null && (ehPalavraChaveDeTipo(tokenEmAnalise) || "final".equals(tokenEmAnalise.getNome().toLowerCase()))) {
+        boolean isFinalConstant = false;
+        String declaredTypeForId; // Este será o tipo real: "int", "string", etc.
+        Token tokenForErrorReporting = tokenEmAnalise; // Token para referência em mensagens de erro
 
-            Token idDeclaradoToken;
-            if (tokenEmAnalise != null && "ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) {
-                idDeclaradoToken = tokenEmAnalise;
+        if ("final".equals(tokenEmAnalise.getNome().toLowerCase())) {
+            isFinalConstant = true;
+            consumirProximoToken(); // Consome "final"
+
+            if (tokenEmAnalise == null) {
+                ErroLexico.erroSintatico("Tipo ou Identificador após 'final'", tokenForErrorReporting);
+                return; // Ou lançar exceção para parar
+            }
+
+            // Após "final", pode vir um tipo explícito (ex: final int ID) ou diretamente o ID (ex: final ID = valor)
+            if (ehPalavraChaveDeTipo(tokenEmAnalise)) { // Caso: final TIPO ID ...
+                declaredTypeForId = tokenEmAnalise.getNome().toLowerCase();
+                consumirProximoToken(); // Consome o tipo (int, string, etc.)
+            } else if ("ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) { // Caso: final ID = valor; (tipo será inferido)
+                declaredTypeForId = null; // Sinaliza que o tipo deve ser inferido da atribuição
             } else {
-                // O token encontrado é o 'tokenEmAnalise' atual, ou o anterior se 'tokenEmAnalise' for nulo
-                Token tokenParaErro = tokenEmAnalise != null ? tokenEmAnalise : tokenTipoBase;
-                ErroLexico.erroSintatico("Identificador", tokenParaErro);
+                ErroLexico.erroSintatico("Tipo ou Identificador válido após 'final'", tokenEmAnalise);
                 return;
             }
-            String nomeIdDeclarado = idDeclaradoToken.getNome();
+        } else { // Declaração de variável normal (não final)
+            // isFinalConstant continua false
+            declaredTypeForId = tokenEmAnalise.getNome().toLowerCase();
+            consumirProximoToken(); // Consome o tipo (int, string, etc.)
+        }
 
-            if (identificadorFoiPreviamenteDeclarado(nomeIdDeclarado)) {
-                // ErroLexico não tem um erro específico para "já declarado".
-                throw new ExcecaoCompilador("Erro Semântico: Identificador '" + nomeIdDeclarado
-                        + "' já foi declarado anteriormente. Linha " + idDeclaradoToken.getLinha()
-                        + ", coluna " + idDeclaradoToken.getColuna() + ".");
+        // Neste ponto, o tokenEmAnalise DEVE ser o Identificador
+        Token idToken;
+        if (tokenEmAnalise != null && "ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) {
+            idToken = tokenEmAnalise;
+        } else {
+            ErroLexico.erroSintatico("Identificador", tokenEmAnalise != null ? tokenEmAnalise : tokenForErrorReporting);
+            return;
+        }
+        String idName = idToken.getNome();
+
+        if (identificadorFoiPreviamenteDeclarado(idName)) {
+            throw new ExcecaoCompilador("Erro Semântico: Identificador '" + idName + "' já foi declarado anteriormente. Linha " + idToken.getLinha() + ", coluna " + idToken.getColuna() + ".");
+        }
+
+        consumirProximoToken(); // Consome o ID, esperando '=' ou ';'
+
+        String actualTypeOfId = declaredTypeForId; // Pode ser null se 'final ID = valor' e o tipo ainda não foi inferido
+
+        if (tokenEmAnalise != null && "=".equals(tokenEmAnalise.getNome())) { // Atribuição encontrada
+            consumirProximoToken(); // Consome o '='
+            if (tokenEmAnalise == null) {
+                ErroLexico.erroSintatico("Valor (literal ou identificador) para atribuição", idToken);
+                return;
             }
+            Token assignedValueToken = tokenEmAnalise;
+            String typeOfAssignedValue = determinarTipoDeDadoSemantico(assignedValueToken);
 
-            String tipoEfetivoDoId = tipoBase.toLowerCase();
-            boolean declaracaoConstante = "final".equals(tipoEfetivoDoId);
-            Token tokenParaArmazenarNoMapaLocal;
-
-            if (declaracaoConstante) {
-                // Cria um NOVO token com o tipo "pendente_final"
-                tokenParaArmazenarNoMapaLocal = new Token(
-                        idDeclaradoToken.getNome(),
-                        "pendente_final", // Este é o campo 'tipo' do novo Token
-                        idDeclaradoToken.getClassificacao(),
-                        idDeclaradoToken.getLinha(),
-                        idDeclaradoToken.getColuna()
-                );
+            if (actualTypeOfId == null) { // O tipo precisava ser inferido (caso: final ID = valor;)
+                if (!isFinalConstant) {
+                    // Isso seria um erro de lógica interna ou uma construção de linguagem não prevista.
+                    // Variáveis normais geralmente requerem tipo explícito se não inicializadas.
+                    throw new ExcecaoCompilador("Erro Interno: Tentativa de inferir tipo para variável não constante sem tipo explícito.");
+                }
+                actualTypeOfId = typeOfAssignedValue; // O tipo da constante é o tipo do valor atribuído
             } else {
-                // Cria um NOVO token com o tipo efetivo
-                tokenParaArmazenarNoMapaLocal = new Token(
-                        idDeclaradoToken.getNome(),
-                        tipoEfetivoDoId, // Este é o campo 'tipo' do novo Token
-                        idDeclaradoToken.getClassificacao(),
-                        idDeclaradoToken.getLinha(),
-                        idDeclaradoToken.getColuna()
-                );
-            }
-            definicoesDeSimbolosLocais.put(nomeIdDeclarado, idDeclaradoToken);
-            consumirProximoToken();
-
-            if (tokenEmAnalise != null && "=".equals(tokenEmAnalise.getNome())) {
-                consumirProximoToken();
-                if (tokenEmAnalise == null) {
-                    // O valor era esperado após o ID que foi consumido (idDeclaradoToken)
-                    ErroLexico.erroSintatico("Valor (literal ou identificador)", idDeclaradoToken);
-                    return;
-                }
-
-                Token valorInicialToken = tokenEmAnalise;
-                String tipoValorInicial = determinarTipoDeDadoSemantico(valorInicialToken);
-
-                if (declaracaoConstante && "pendente_final".equals(idDeclaradoToken.getTipo())) {
-                    idDeclaradoToken.setTipo(tipoValorInicial);
-                    tipoEfetivoDoId = tipoValorInicial;
-                }
-
-                // Ajuste para erroSemanticoAtribuicao:
-                // Precisamos que idDeclaradoToken.getTipo() reflita tipoEfetivoDoId
-                // e valorInicialToken.getTipo() reflita tipoValorInicial (ou o mais próximo).
-                // Se valorInicialToken é um literal, seu getTipo() é "CONST".
-                // A mensagem em ErroLexico.erroSemanticoAtribuicao usa tokenIncorreto.getTipo().
-                // Isso pode ser problemático se quisermos mostrar "int" vs "string" e não "CONST" vs "string".
-                if (!tipoEfetivoDoId.equalsIgnoreCase(tipoValorInicial)) {
-                    // Para manter a informação de tipo precisa, lançamos ExcecaoCompilador.
-                    // Ou você ajusta ErroLexico.mensagemErroSemanticoAtribuicao para usar uma lógica
-                    // similar a determinarTipoDeDadoSemantico para o tokenIncorreto.
+                // O tipo foi declarado explicitamente (ex: int x = valor; ou final int x = valor;)
+                // Agora, a comparação correta (equivalente à sua antiga linha 186):
+                if (!actualTypeOfId.equalsIgnoreCase(typeOfAssignedValue)) {
                     throw new ExcecaoCompilador(
-                            "Erro Semântico: atribuição incompatível! Variável '" + idDeclaradoToken.getNome()
-                            + "' (tipo '" + tipoEfetivoDoId + "') não pode receber valor do tipo '" + tipoValorInicial
-                            + "'. Linha " + valorInicialToken.getLinha() + ", coluna " + valorInicialToken.getColuna() + "."
+                        "Erro Semântico: atribuição incompatível! Variável '" + idName +
+                        "' (tipo '" + actualTypeOfId + "') não pode receber valor do tipo '" + typeOfAssignedValue +
+                        "'. Linha " + assignedValueToken.getLinha() + ", coluna " + assignedValueToken.getColuna() + "."
                     );
                 }
-                consumirProximoToken();
-            } else if (declaracaoConstante) {
-                throw new ExcecaoCompilador("Erro Semântico: Constante 'final' '" + idDeclaradoToken.getNome()
-                        + "' deve ser inicializada na declaração. Linha " + idDeclaradoToken.getLinha()
-                        + ", coluna " + idDeclaradoToken.getColuna() + ".");
             }
 
-            if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
-                // O token encontrado é o atual 'tokenEmAnalise', ou o 'idDeclaradoToken' se o fim for abrupto.
-                ErroLexico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idDeclaradoToken);
-                avancarAteProximaInstrucaoOuDeclaracao();
-            } else {
-                consumirProximoToken();
+            // Armazena o símbolo com seu tipo CORRETO.
+            // Você pode querer adicionar uma flag 'isConstant' ao Token se precisar distinguir
+            // `int` de `final int` para outras verificações (ex: tentativa de reatribuição).
+            Token tokenToStore = new Token(idName, actualTypeOfId, idToken.getClassificacao(), idToken.getLinha(), idToken.getColuna() /*, isFinalConstant */);
+            definicoesDeSimbolosLocais.put(idName, tokenToStore);
+
+            consumirProximoToken(); // Consome o valor atribuído
+        } else { // Sem atribuição imediata (ex: int x; ou final int x;)
+            if (isFinalConstant) {
+                // Constantes devem ser inicializadas na declaração.
+                // Se actualTypeOfId é null aqui, significa `final ID;` (sem tipo explícito, sem valor) -> Erro.
+                // Se actualTypeOfId não é null, significa `final TIPO ID;` (com tipo explícito, mas sem valor) -> Erro.
+                throw new ExcecaoCompilador("Erro Semântico: Constante 'final' '" + idName + "' deve ser inicializada na declaração. Linha " + idToken.getLinha() + ", coluna " + idToken.getColuna() + ".");
             }
+            if (actualTypeOfId == null) {
+                 // Caso de declaração de variável sem tipo e sem inicialização (ex: "variavel;")
+                 // Se sua linguagem não permitir isso, lance um erro.
+                throw new ExcecaoCompilador("Erro Semântico: Variável '" + idName + "' declarada sem tipo explícito e sem inicialização. Linha " + idToken.getLinha() + ", coluna " + idToken.getColuna() + ".");
+            }
+            // Declaração de variável sem inicialização (ex: int x;)
+            Token tokenToStore = new Token(idName, actualTypeOfId, idToken.getClassificacao(), idToken.getLinha(), idToken.getColuna());
+            definicoesDeSimbolosLocais.put(idName, tokenToStore);
+            // Não consome token aqui, o próximo token deve ser ';'
+        }
+
+        // Verifica o ponto e vírgula finalizador
+        if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
+            ErroLexico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idToken);
+            avancarAteProximaInstrucaoOuDeclaracao(); // Tenta se recuperar do erro
+        } else {
+            consumirProximoToken(); // Consome ';'
         }
     }
+    }
 
-    private void propagarTiposParaTabelaDeSimbolosGlobal() {
-        for (Token tokenDefinidoLocalmente : definicoesDeSimbolosLocais.values()) {
-            for (int i = 0; i < tabelaDeSimbolosRaiz.tamanho(); i++) {
-                Token tokenNaTabelaGlobal = tabelaDeSimbolosRaiz.tokenAtual(i); // Corrigido: tokenAtual()
-                if (tokenNaTabelaGlobal.getNome().equals(tokenDefinidoLocalmente.getNome())) {
-                    if (tokenNaTabelaGlobal.getTipo() == null
-                            || !tokenNaTabelaGlobal.getTipo().equals(tokenDefinidoLocalmente.getTipo())) {
-                        tokenNaTabelaGlobal.setTipo(tokenDefinidoLocalmente.getTipo());
-                    }
-                    break;
+private void propagarTiposParaTabelaDeSimbolosGlobal() {
+    for (Token tokenDefinidoLocalmente : definicoesDeSimbolosLocais.values()) {
+        for (int i = 0; i < tabelaDeSimbolosRaiz.tamanho(); i++) {
+            Token tokenNaTabelaGlobal = tabelaDeSimbolosRaiz.tokenAtual(i);
+            if (tokenNaTabelaGlobal.getNome().equals(tokenDefinidoLocalmente.getNome())) {
+                if (tokenNaTabelaGlobal.getTipo() == null || !tokenNaTabelaGlobal.getTipo().equals(tokenDefinidoLocalmente.getTipo())) {
+                    Token novoToken = new Token(
+                        tokenDefinidoLocalmente.getNome(),
+                        tokenDefinidoLocalmente.getTipo(),
+                        tokenDefinidoLocalmente.getClassificacao(),
+                        tokenDefinidoLocalmente.getLinha(),
+                        tokenDefinidoLocalmente.getColuna()
+                    );
+                    tabelaDeSimbolosRaiz.subistituirToken(i, novoToken); 
                 }
+                break;
             }
         }
     }
+}
 
     private void validarInstrucoesEFluxoDeDados() throws ExcecaoCompilador {
-        while (tokenEmAnalise != null) {
-            String nomeAtual = tokenEmAnalise.getNome();
-            String classificacaoAtual = tokenEmAnalise.getClassificacao();
+    while (tokenEmAnalise != null) {
+        String nomeAtual = tokenEmAnalise.getNome().toLowerCase(); // Converter para minúsculas para ser case-insensitive
+        String classificacaoAtual = tokenEmAnalise.getClassificacao();
 
-            if ("ID".equalsIgnoreCase(classificacaoAtual)) {
-                checarAtribuicaoParaIdentificador(tokenEmAnalise);
-            } else if ("while".equals(nomeAtual) || "if".equals(nomeAtual)) {
-                Token tokenEstruturaControle = tokenEmAnalise;
-                consumirProximoToken();
-                if (tokenEmAnalise == null) {
-                    ErroLexico.erroSemanticoExpressaoInvalidaAposControle(tokenEstruturaControle);
-                    return;
-                }
-                String tipoExprCondicional = resolverTipoDeExpressao("boolean");
-                if (!"boolean".equalsIgnoreCase(tipoExprCondicional)) {
-                    ErroLexico.erroSemanticoExpressaoInvalida("boolean", tipoExprCondicional, tokenEstruturaControle);
-                }
-            } else if (";".equals(nomeAtual)) {
-                consumirProximoToken();
-            } else if (deveIgnorarTokenAtualNaValidacao(nomeAtual)) {
-                consumirProximoToken();
-            } else {
-                // Se não for instrução reconhecida.
-                ErroLexico.erroSintatico("Início de instrução válida ou fim de bloco", tokenEmAnalise);
-                consumirProximoToken();
+        if ("ID".equalsIgnoreCase(classificacaoAtual)) {
+            checarAtribuicaoParaIdentificador(tokenEmAnalise);
+        } else if ("while".equals(nomeAtual) || "if".equals(nomeAtual)) {
+            Token tokenEstruturaControle = tokenEmAnalise;
+            consumirProximoToken();
+            if (tokenEmAnalise == null) {
+                ErroLexico.erroSemanticoExpressaoInvalidaAposControle(tokenEstruturaControle);
+                return;
             }
+            String tipoExprCondicional = resolverTipoDeExpressao("boolean");
+            if (!"boolean".equalsIgnoreCase(tipoExprCondicional)) {
+                ErroLexico.erroSemanticoExpressaoInvalida("boolean", tipoExprCondicional, tokenEstruturaControle);
+            }
+        } else if ("write".equals(nomeAtual)) { // <--- NOVA CONDIÇÃO
+            processarInstrucaoWrite();
+        } else if (";".equals(nomeAtual)) {
+            consumirProximoToken();
+        } else if (deveIgnorarTokenAtualNaValidacao(nomeAtual)) {
+            consumirProximoToken();
+        } else {
+            // Se não for instrução reconhecida.
+            ErroLexico.erroSintatico("Início de instrução válida ou fim de bloco", tokenEmAnalise);
+            consumirProximoToken();
         }
     }
+}
 
     private boolean deveIgnorarTokenAtualNaValidacao(String nomeToken) {
         return "begin".equals(nomeToken) || "end".equals(nomeToken) || "else".equals(nomeToken)

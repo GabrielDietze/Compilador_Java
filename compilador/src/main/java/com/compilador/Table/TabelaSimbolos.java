@@ -31,6 +31,15 @@ public class TabelaSimbolos {
         return this.tabelaSimbolos.size();
     }
 
+    public void subistituirToken(int index, Token token) {
+        if (index >= 0 && index < this.tabelaSimbolos.size()) {
+            this.tabelaSimbolos.set(index, token);
+        } else {
+            throw new IndexOutOfBoundsException("Índice fora dos limites da tabela de símbolos.");
+        }
+    }
+
+
     public void printSimbolos() {
         for (Token token : this.tabelaSimbolos) {
             System.out.println(token.toString());

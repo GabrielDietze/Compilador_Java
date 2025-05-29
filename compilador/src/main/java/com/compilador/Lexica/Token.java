@@ -2,12 +2,12 @@
 package com.compilador.Lexica;
 
 public class Token {
-    private String nome; 
+    private final String nome; 
     private String tipo; 
-    private String classificacao;
-    private int linha;
-    private int coluna;
-
+    private final String classificacao;
+    private final int linha;
+    private final int coluna;
+    
 
     public Token(String nome, String tipo, String classificacao, int linha, int coluna) {
         this.nome = nome;
@@ -16,11 +16,17 @@ public class Token {
         this.linha = linha;
         this.coluna = coluna;
     }
+
+    
     public String getNome() { return nome; }
     public String getTipo() { return tipo; }
     public String getClassificacao() { return classificacao; }
     public int getLinha() { return linha; }
     public int getColuna() { return coluna; }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
 
     @Override
     public String toString() {
