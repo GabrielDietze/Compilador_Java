@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.Map; // Sua classe de tratamento de erros
 import java.util.Set;
 
-import com.compilador.Execptions.ErroLexico;
+import com.compilador.Execptions.ErroSemantico;
+import com.compilador.Execptions.ErroSintatico;
 import com.compilador.Execptions.ExcecaoCompilador;
 import com.compilador.Lexica.Token;
 import com.compilador.Table.TabelaSimbolos;
@@ -63,7 +64,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
 
     // Verifica se há pelo menos uma expressão para escrever
     if (tokenEmAnalise == null) {
-        ErroLexico.erroSintatico("Expressão ou '(' após '" + instrucaoWriteToken.getNome() + "'", instrucaoWriteToken);
+        ErroSintatico.erroSintatico("Expressão ou '(' após '" + instrucaoWriteToken.getNome() + "'", instrucaoWriteToken);
         return; // Ou lançar a exceção para parar a análise
     }
     // A chamada a resolverTipoDeExpressao abaixo verificará se o token atual pode iniciar uma expressão.
@@ -82,7 +83,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
             Token tokenReferenciaErro = (ponteiroParaTokenAtual > 0 && 
                                        tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1).getNome().equals(",")) ?
                                        tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1) : instrucaoWriteToken;
-            ErroLexico.erroSintatico("Expressão após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", tokenReferenciaErro);
+           ErroSintatico.erroSintatico("Expressão após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", tokenReferenciaErro);
             return;
         }
         
@@ -93,7 +94,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
     if (temParentesesAbertura) {
         if (tokenEmAnalise == null || !")".equals(tokenEmAnalise.getNome())) {
             // Se esperava ')' mas encontrou outra coisa (ou fim de arquivo), ou se esperava mais expressões (vírgula)
-            ErroLexico.erroSintatico("')' ou ',' após expressão na instrução '" + instrucaoWriteToken.getNome() + "'",
+            ErroSintatico.erroSintatico("')' ou ',' após expressão na instrução '" + instrucaoWriteToken.getNome() + "'",
                                     tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
             // Considere tentar se recuperar ou parar
         } else {
@@ -103,7 +104,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
 
     // Espera-se um ponto e vírgula para finalizar a instrução
     if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
-        ErroLexico.erroSintatico("';' para finalizar a instrução '" + instrucaoWriteToken.getNome() + "'",
+        ErroSintatico.erroSintatico("';' para finalizar a instrução '" + instrucaoWriteToken.getNome() + "'",
                                 tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
         // Considere tentar se recuperar ou parar
     } else {
@@ -146,14 +147,14 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
             }
             // Renomeado na sua classe ErroLexico: erroSemanticoTookenInvalido -> erroSemanticoTokenInvalido
             // Usando erroSemanticoNaoDeclarado aqui, que parece mais apropriado.
-            ErroLexico.erroSemanticoNaoDeclarado(token);
+            ErroSemantico.erroSemanticoNaoDeclarado(token);
             return "tipo_id_nao_resolvido_erro";
         }
 
         // Se chegou aqui, o token não é uma constante nem um ID válido como operando.
         // Na sua classe ErroLexico, o método é erroSemanticoTookenInvalido (com 'k'). Corrija o nome se necessário.
         // Vou usar erroSemanticoTookenInvalido assumindo que o nome está assim na sua classe.
-        ErroLexico.erroSemanticoTookenInvalido(token);
+        ErroSemantico.erroSemanticoTookenInvalido(token);
         return "tipo_operando_invalido_erro";
     }
 
@@ -196,7 +197,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
             consumirProximoToken(); // Consome "final"
 
             if (tokenEmAnalise == null) {
-                ErroLexico.erroSintatico("Tipo ou Identificador após 'final'", tokenForErrorReporting);
+                ErroSintatico.erroSintatico("Tipo ou Identificador após 'final'", tokenForErrorReporting);
                 return; // Ou lançar exceção para parar
             }
 
@@ -207,7 +208,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
             } else if ("ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) { // Caso: final ID = valor; (tipo será inferido)
                 declaredTypeForId = null; // Sinaliza que o tipo deve ser inferido da atribuição
             } else {
-                ErroLexico.erroSintatico("Tipo ou Identificador válido após 'final'", tokenEmAnalise);
+                ErroSintatico.erroSintatico("Tipo ou Identificador válido após 'final'", tokenEmAnalise);
                 return;
             }
         } else { // Declaração de variável normal (não final)
@@ -221,7 +222,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
         if (tokenEmAnalise != null && "ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) {
             idToken = tokenEmAnalise;
         } else {
-            ErroLexico.erroSintatico("Identificador", tokenEmAnalise != null ? tokenEmAnalise : tokenForErrorReporting);
+            ErroSintatico.erroSintatico("Identificador", tokenEmAnalise != null ? tokenEmAnalise : tokenForErrorReporting);
             return;
         }
         String idName = idToken.getNome();
@@ -237,7 +238,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
         if (tokenEmAnalise != null && "=".equals(tokenEmAnalise.getNome())) { // Atribuição encontrada
             consumirProximoToken(); // Consome o '='
             if (tokenEmAnalise == null) {
-                ErroLexico.erroSintatico("Valor (literal ou identificador) para atribuição", idToken);
+                ErroSintatico.erroSintatico("Valor (literal ou identificador) para atribuição", idToken);
                 return;
             }
             Token assignedValueToken = tokenEmAnalise;
@@ -289,7 +290,7 @@ private void processarInstrucaoWrite() throws ExcecaoCompilador {
 
         // Verifica o ponto e vírgula finalizador
         if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
-            ErroLexico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idToken);
+            ErroSintatico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idToken);
             avancarAteProximaInstrucaoOuDeclaracao(); // Tenta se recuperar do erro
         } else {
             consumirProximoToken(); // Consome ';'
@@ -329,12 +330,12 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             Token tokenEstruturaControle = tokenEmAnalise;
             consumirProximoToken();
             if (tokenEmAnalise == null) {
-                ErroLexico.erroSemanticoExpressaoInvalidaAposControle(tokenEstruturaControle);
+                ErroSemantico.erroSemanticoExpressaoInvalidaAposControle(tokenEstruturaControle);
                 return;
             }
             String tipoExprCondicional = resolverTipoDeExpressao("boolean");
             if (!"boolean".equalsIgnoreCase(tipoExprCondicional)) {
-                ErroLexico.erroSemanticoExpressaoInvalida("boolean", tipoExprCondicional, tokenEstruturaControle);
+                ErroSemantico.erroSemanticoExpressaoInvalida("boolean", tipoExprCondicional, tokenEstruturaControle);
             }
         } else if ("write".equals(nomeAtual)) { // <--- NOVA CONDIÇÃO
             processarInstrucaoWrite();
@@ -344,7 +345,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
         } else {
             // Se não for instrução reconhecida.
-            ErroLexico.erroSintatico("Início de instrução válida ou fim de bloco", tokenEmAnalise);
+            ErroSintatico.erroSintatico("Início de instrução válida ou fim de bloco", tokenEmAnalise);
             consumirProximoToken();
         }
     }
@@ -358,7 +359,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
 
     private void checarAtribuicaoParaIdentificador(Token idLadoEsquerdo) throws ExcecaoCompilador {
         if (!identificadorFoiPreviamenteDeclarado(idLadoEsquerdo.getNome())) {
-            ErroLexico.erroSemanticoNaoDeclarado(idLadoEsquerdo);
+            ErroSemantico.erroSemanticoNaoDeclarado(idLadoEsquerdo);
             avancarAteProximaInstrucaoOuDeclaracao(Set.of(";"));
             return;
         }
@@ -371,7 +372,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
         if (tokenEmAnalise != null && "=".equals(tokenEmAnalise.getNome())) {
             consumirProximoToken();
             if (tokenEmAnalise == null) {
-                ErroLexico.erroSintatico("Expressão/Valor", idLadoEsquerdo); // O erro é após o idLadoEsquerdo (e o igual)
+                ErroSintatico.erroSintatico("Expressão/Valor", idLadoEsquerdo); // O erro é após o idLadoEsquerdo (e o igual)
                 return;
             }
 
@@ -388,14 +389,14 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             }
 
             if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
-                ErroLexico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idLadoEsquerdo);
+                ErroSintatico.erroSintatico(";", tokenEmAnalise != null ? tokenEmAnalise : idLadoEsquerdo);
             } else {
                 consumirProximoToken();
             }
         } else {
             Token tokenInesperado = tokenEmAnalise; // O token que não é '='
             retornarTokenAnterior(); // Volta para o ID, para a mensagem de erro fazer sentido sobre o que veio APÓS o ID.
-            ErroLexico.erroSintatico("=", tokenInesperado != null ? tokenInesperado : idLadoEsquerdo); // Esperava '=' mas encontrou 'tokenInesperado'
+            ErroSintatico.erroSintatico("=", tokenInesperado != null ? tokenInesperado : idLadoEsquerdo); // Esperava '=' mas encontrou 'tokenInesperado'
         }
     }
 
@@ -411,13 +412,13 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
             tipoLadoEsquerdoAcumulado = resolverTipoDeExpressao(tipoDeContexto);
             if (tokenEmAnalise == null || !")".equals(tokenEmAnalise.getNome())) {
-                ErroLexico.erroSintatico(")", tokenEmAnalise != null ? tokenEmAnalise : parenAbertura);
+                ErroSintatico.erroSintatico(")", tokenEmAnalise != null ? tokenEmAnalise : parenAbertura);
             } else {
                 consumirProximoToken();
             }
         } else if (tokenAtualConfiguraUmOperando()) {
             if ("ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao()) && !identificadorFoiPreviamenteDeclarado(tokenEmAnalise.getNome())) {
-                ErroLexico.erroSemanticoNaoDeclarado(tokenEmAnalise);
+                ErroSemantico.erroSemanticoNaoDeclarado(tokenEmAnalise);
                 // consumirProximoToken(); // O erroSemanticoNaoDeclarado já lança exceção, não precisa consumir
                 return "tipo_expr_erro_id_nao_declarado";
             }
@@ -428,11 +429,11 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
             String tipoOperandoDoNot = resolverTipoDeExpressao("boolean");
             if (!"boolean".equalsIgnoreCase(tipoOperandoDoNot)) {
-                ErroLexico.erroSemanticoExpressaoInvalida("boolean", tipoOperandoDoNot, operadorNotToken);
+                ErroSemantico.erroSemanticoExpressaoInvalida("boolean", tipoOperandoDoNot, operadorNotToken);
             }
             return "boolean";
         } else {
-            ErroLexico.erroSintatico("Operando, '(' ou 'not'", tokenEmAnalise);
+            ErroSintatico.erroSintatico("Operando, '(' ou 'not'", tokenEmAnalise);
             return "tipo_expr_erro_inicio_invalido"; // Não será alcançado
         }
 
@@ -445,7 +446,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
 
             if (tokenEmAnalise == null) {
-                ErroLexico.erroSemanticoOperandoEsperadoApos(tokenOperadorAtual.getNome(), tokenOperadorAtual);
+                ErroSemantico.erroSemanticoOperandoEsperadoApos(tokenOperadorAtual.getNome(), tokenOperadorAtual);
                 return "tipo_expr_erro_fim_abrupto"; // Não será alcançado
             }
 
@@ -466,7 +467,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
                             || !(tipoLadoEsquerdoAcumulado.equals("int") || tipoLadoEsquerdoAcumulado.equals("boolean") || tipoLadoEsquerdoAcumulado.equals("string"))) {
                         // erroSemanticoComparacaoInvalida espera (Token token, String tipoEsperado)
                         // O 'token' é o operador. O 'tipoEsperado' seria o tipo do lado esquerdo.
-                        ErroLexico.erroSemanticoComparacaoInvalida(tokenOperadorAtual, tipoLadoEsquerdoAcumulado);
+                        ErroSemantico.erroSemanticoComparacaoInvalida(tokenOperadorAtual, tipoLadoEsquerdoAcumulado);
                     }
                 } else if (OPERADORES_LOGICOS_CONJUTIVOS.contains(tokenOperadorAtual.getNome())) {
                     if (!"boolean".equalsIgnoreCase(tipoLadoEsquerdoAcumulado) || !"boolean".equalsIgnoreCase(tipoLadoDireito)) {
@@ -474,7 +475,7 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
                         // Se ambos deveriam ser boolean, o tipoEsperado é "boolean".
                         // Se tipoLadoEsquerdoAcumulado não for boolean, ele é o "tipoRecebido" problemático.
                         String tipoRecebidoProblematico = !"boolean".equalsIgnoreCase(tipoLadoEsquerdoAcumulado) ? tipoLadoEsquerdoAcumulado : tipoLadoDireito;
-                        ErroLexico.erroSemanticoExpressaoInvalida("boolean", tipoRecebidoProblematico, tokenOperadorAtual);
+                        ErroSemantico.erroSemanticoExpressaoInvalida("boolean", tipoRecebidoProblematico, tokenOperadorAtual);
                     }
                 }
                 tipoLadoEsquerdoAcumulado = "boolean";
@@ -494,13 +495,13 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
             tipoResolvido = resolverTipoDeExpressao(tipoDeContexto);
             if (tokenEmAnalise == null || !")".equals(tokenEmAnalise.getNome())) {
-                ErroLexico.erroSintatico(")", tokenEmAnalise != null ? tokenEmAnalise : tokenReferenciaErro);
+                ErroSintatico.erroSintatico(")", tokenEmAnalise != null ? tokenEmAnalise : tokenReferenciaErro);
             } else {
                 consumirProximoToken();
             }
         } else if (tokenAtualConfiguraUmOperando()) {
             if ("ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao()) && !identificadorFoiPreviamenteDeclarado(tokenEmAnalise.getNome())) {
-                ErroLexico.erroSemanticoNaoDeclarado(tokenEmAnalise);
+                ErroSemantico.erroSemanticoNaoDeclarado(tokenEmAnalise);
                 // consumirProximoToken(); // Exceção já foi lançada
                 return "tipo_fator_erro_id_nao_declarado";
             }
@@ -508,10 +509,10 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
         } else if ("not".equalsIgnoreCase(tokenEmAnalise.getNome())) {
             // erroSemanticoTookenInvalido é o mais próximo para um 'not' mal posicionado aqui.
-            ErroLexico.erroSemanticoTookenInvalido(tokenEmAnalise);
+            ErroSemantico.erroSemanticoTookenInvalido(tokenEmAnalise);
             return "tipo_fator_erro_not_mal_posicionado"; // Não será alcançado
         } else {
-            ErroLexico.erroSintatico("Operando ou '('", tokenEmAnalise);
+            ErroSintatico.erroSintatico("Operando ou '('", tokenEmAnalise);
             return "tipo_fator_erro_invalido"; // Não será alcançado
         }
         return tipoResolvido;
