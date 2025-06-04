@@ -51,62 +51,98 @@ public class AnalisadorSemantico {
         }
     }
 
-private void processarInstrucaoWrite() throws ExcecaoCompilador {
+   private void processarInstrucaoWriteln() throws ExcecaoCompilador {
+    Token instrucaoWritelnToken = tokenEmAnalise; // Para mensagens de erro contextualizadas
+    consumirProximoToken(); // Consome a palavra-chave 'writeln'
+
+    // Trata vírgula imediatamente após o 'writeln'
+    if (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
+        consumirProximoToken(); // Consome a vírgula
+    } else {
+        ErroSintatico.erroSintatico("Esperado ',' após a instrução '" + instrucaoWritelnToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoWritelnToken);
+        return; // Ou avançar para tentar recuperar
+    }
+
+    // Verifica se há pelo menos uma expressão para escrever
+    if (tokenEmAnalise == null || ";".equals(tokenEmAnalise.getNome())) { // Pode ser writeln, ; para linha em branco
+         // Se for só writeln, ; (para pular linha), não precisa de expressão.
+         // Se sua linguagem permitir writeln,VARIAVEL; então este if é diferente.
+         // Assumindo que writeln, expressao; é o padrão como o write.
+        ErroSintatico.erroSintatico("Expressão esperada após ',' na instrução '" + instrucaoWritelnToken.getNome() + "'",
+                                    instrucaoWritelnToken); // Ou o token da vírgula como referência
+        // Se writeln, ; for válido para pular linha, não gere erro aqui.
+        // A lógica abaixo já trataria isso se não encontrar expressões.
+    }
+
+    // Se o token após a vírgula não for um ponto e vírgula (indicando writeln,;)
+    // então processamos as expressões.
+    if (tokenEmAnalise != null && !";".equals(tokenEmAnalise.getNome())) {
+        // Processa a primeira expressão
+        resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE"); // Mesmo tipo de validação do write
+
+        // Loop para processar expressões subsequentes separadas por vírgula
+        while (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
+            consumirProximoToken(); // Consome a vírgula ','
+
+            if (tokenEmAnalise == null || ";".equals(tokenEmAnalise.getNome())) { // Vírgula solta no final
+                Token tokenReferenciaErro = (ponteiroParaTokenAtual > 0 &&
+                                             tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1).getNome().equals(",")) ?
+                                             tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1) : instrucaoWritelnToken;
+                ErroSintatico.erroSintatico("Expressão esperada após ',' na instrução '" + instrucaoWritelnToken.getNome() + "'", tokenReferenciaErro);
+                return; // Ou avançar
+            }
+            resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE");
+        }
+    }
+    // Espera-se um ponto e vírgula para finalizar a instrução
+    if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
+        ErroSintatico.erroSintatico("';' esperado para finalizar a instrução '" + instrucaoWritelnToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoWritelnToken);
+    } else {
+        consumirProximoToken(); // Consome o ';'
+    }
+}
+    private void processarInstrucaoWrite() throws ExcecaoCompilador {
     Token instrucaoWriteToken = tokenEmAnalise; // Para mensagens de erro contextualizadas
     consumirProximoToken(); // Consome a palavra-chave 'write'
 
-    boolean temParentesesAbertura = false;
-    if (tokenEmAnalise != null && "(".equals(tokenEmAnalise.getNome())) {
-        temParentesesAbertura = true;
-        consumirProximoToken(); // Consome '('
+    // Trata vírgula imediatamente após o 'write'
+    if (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
+        consumirProximoToken(); // Consome a vírgula
+    } else {
+        ErroSintatico.erroSintatico("Esperado ',' após a instrução '" + instrucaoWriteToken.getNome() + "'", tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
+        return;
     }
-    // Se não houver '(', a próxima coisa deve ser o início de uma expressão.
 
     // Verifica se há pelo menos uma expressão para escrever
     if (tokenEmAnalise == null) {
-        ErroSintatico.erroSintatico("Expressão ou '(' após '" + instrucaoWriteToken.getNome() + "'", instrucaoWriteToken);
-        return; // Ou lançar a exceção para parar a análise
+        ErroSintatico.erroSintatico("Expressão esperada após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", instrucaoWriteToken);
+        return;
     }
-    // A chamada a resolverTipoDeExpressao abaixo verificará se o token atual pode iniciar uma expressão.
 
     // Processa a primeira expressão
-    // O contexto "QUALQUER_TIPO_VALIDO_PARA_WRITE" pode ser usado para checagens futuras se necessário.
     resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE");
-    // TODO: Opcionalmente, valide aqui se o tipo retornado é permitido para 'write'.
 
     // Loop para processar expressões subsequentes separadas por vírgula
     while (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
-        consumirProximoToken(); // <<< ETAPA CRUCIAL: Consome a vírgula ','
+        consumirProximoToken(); // Consome a vírgula ','
 
-        if (tokenEmAnalise == null) { // Verifica se há uma expressão após a vírgula
-            // Pega o token anterior (a vírgula) para a mensagem de erro, se possível
+        if (tokenEmAnalise == null) {
             Token tokenReferenciaErro = (ponteiroParaTokenAtual > 0 && 
                                        tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1).getNome().equals(",")) ?
                                        tabelaDeSimbolosRaiz.tokenAtual(ponteiroParaTokenAtual - 1) : instrucaoWriteToken;
-           ErroSintatico.erroSintatico("Expressão após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", tokenReferenciaErro);
+            ErroSintatico.erroSintatico("Expressão esperada após ',' na instrução '" + instrucaoWriteToken.getNome() + "'", tokenReferenciaErro);
             return;
         }
-        
-        resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE"); // Processa a próxima expressão
-        // TODO: Opcionalmente, valide o tipo retornado aqui também.
-    }
 
-    if (temParentesesAbertura) {
-        if (tokenEmAnalise == null || !")".equals(tokenEmAnalise.getNome())) {
-            // Se esperava ')' mas encontrou outra coisa (ou fim de arquivo), ou se esperava mais expressões (vírgula)
-            ErroSintatico.erroSintatico("')' ou ',' após expressão na instrução '" + instrucaoWriteToken.getNome() + "'",
-                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
-            // Considere tentar se recuperar ou parar
-        } else {
-            consumirProximoToken(); // Consome ')'
-        }
+        resolverTipoDeExpressao("QUALQUER_TIPO_VALIDO_PARA_WRITE");
     }
 
     // Espera-se um ponto e vírgula para finalizar a instrução
     if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
-        ErroSintatico.erroSintatico("';' para finalizar a instrução '" + instrucaoWriteToken.getNome() + "'",
-                                tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
-        // Considere tentar se recuperar ou parar
+        ErroSintatico.erroSintatico("';' esperado para finalizar a instrução '" + instrucaoWriteToken.getNome() + "'", 
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoWriteToken);
     } else {
         consumirProximoToken(); // Consome o ';'
     }
@@ -343,11 +379,59 @@ private void propagarTiposParaTabelaDeSimbolosGlobal() {
             consumirProximoToken();
         } else if (deveIgnorarTokenAtualNaValidacao(nomeAtual)) {
             consumirProximoToken();
-        } else {
+        } else if ("readln".equals(nomeAtual)) {
+            processarInstrucaoReadln();
+        } else if ("writeln".equals(nomeAtual)) {
+            processarInstrucaoWriteln();
+        }
+            else {
             // Se não for instrução reconhecida.
             ErroSintatico.erroSintatico("Início de instrução válida ou fim de bloco", tokenEmAnalise);
             consumirProximoToken();
         }
+    }
+}
+
+private void processarInstrucaoReadln() throws ExcecaoCompilador {
+    Token instrucaoReadlnToken = tokenEmAnalise; // Para mensagens de erro
+    consumirProximoToken(); // Consome a palavra-chave 'readln'
+
+    // Espera uma vírgula após 'readln'
+    if (tokenEmAnalise != null && ",".equals(tokenEmAnalise.getNome())) {
+        consumirProximoToken(); // Consome a vírgula
+    } else {
+        ErroSintatico.erroSintatico("Esperado ',' após a instrução '" + instrucaoReadlnToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoReadlnToken);
+        return; // Ou avançar para tentar recuperar
+    }
+
+    // Espera um identificador (a variável que receberá o valor)
+    if (tokenEmAnalise != null && "ID".equalsIgnoreCase(tokenEmAnalise.getClassificacao())) {
+        Token idToken = tokenEmAnalise;
+
+        // Verificação semântica: o identificador foi declarado?
+        if (!identificadorFoiPreviamenteDeclarado(idToken.getNome())) {
+            ErroSemantico.erroSemanticoNaoDeclarado(idToken); // Lança exceção
+            // Não precisa consumir token aqui se erroSemanticoNaoDeclarado já lança e para
+            return; // Adicionado para clareza, embora a exceção pare o fluxo
+        }
+
+        // TODO: Adicionar outras verificações semânticas se necessário
+        // Ex: A variável é de um tipo que pode receber input? É uma constante 'final'?
+
+        consumirProximoToken(); // Consome o ID da variável
+    } else {
+        ErroSintatico.erroSintatico("Identificador esperado após ',' na instrução '" + instrucaoReadlnToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoReadlnToken);
+        return; // Ou avançar
+    }
+
+    // Espera-se um ponto e vírgula para finalizar a instrução
+    if (tokenEmAnalise == null || !";".equals(tokenEmAnalise.getNome())) {
+        ErroSintatico.erroSintatico("';' esperado para finalizar a instrução '" + instrucaoReadlnToken.getNome() + "'",
+                                    tokenEmAnalise != null ? tokenEmAnalise : instrucaoReadlnToken);
+    } else {
+        consumirProximoToken(); // Consome o ';'
     }
 }
 
