@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import com.compilador.Execptions.ExcecaoCompilador;
+import com.compilador.Exceptions.ExcecaoCompilador;
 import com.compilador.Lexica.AnalisadorLexico;
 
 

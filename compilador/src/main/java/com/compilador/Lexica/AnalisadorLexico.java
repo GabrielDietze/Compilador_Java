@@ -3,8 +3,8 @@ package com.compilador.Lexica;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.compilador.Execptions.ErroLexico;
-import com.compilador.Execptions.ExcecaoCompilador;
+import com.compilador.Exceptions.ErroLexico;
+import com.compilador.Exceptions.ExcecaoCompilador;
 import com.compilador.Table.TabelaSimbolos;
 // Se você tiver uma classe Token, importe-a aqui. Ex:
 // import com.compilador.Table.Token; // ou o caminho correto para sua classe Token
@@ -28,7 +28,6 @@ public class AnalisadorLexico {
     }
 
     public void executarAnalise(String linhaCodigo, int linha) throws ExcecaoCompilador {
-        int coluna = 1;
         // linhaCodigo = linhaCodigo.stripLeading(); // stripLeading no início da linha pode ser suficiente
 
         System.out.println("Analisando linha " + linha + ": " + linhaCodigo);

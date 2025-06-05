@@ -15,6 +15,11 @@ public class TabelaSimbolos {
 
     private final ArrayList<Token> tabelaSimbolos = new ArrayList<>(); // Lista de tokens
 
+
+    public ArrayList<Token> getTabelaSimbolos() {
+    return this.tabelaSimbolos;
+}
+
     public Token tokenAtual(int index){
         return this.tabelaSimbolos.get(index);
     }

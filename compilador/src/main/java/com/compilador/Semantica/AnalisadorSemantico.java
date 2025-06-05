@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map; // Sua classe de tratamento de erros
 import java.util.Set;
 
-import com.compilador.Execptions.ErroSemantico;
-import com.compilador.Execptions.ErroSintatico;
-import com.compilador.Execptions.ExcecaoCompilador;
+import com.compilador.Exceptions.ErroSemantico;
+import com.compilador.Exceptions.ErroSintatico;
+import com.compilador.Exceptions.ExcecaoCompilador;
 import com.compilador.Lexica.Token;
 import com.compilador.Table.TabelaSimbolos;
 

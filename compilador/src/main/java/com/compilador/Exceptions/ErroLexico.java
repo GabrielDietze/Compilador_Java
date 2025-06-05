@@ -1,4 +1,4 @@
-package com.compilador.Execptions;
+package com.compilador.Exceptions;
 
 
 public class ErroLexico {

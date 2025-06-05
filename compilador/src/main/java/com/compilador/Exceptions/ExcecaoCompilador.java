@@ -1,4 +1,4 @@
-package com.compilador.Execptions;
+package com.compilador.Exceptions;
 
 public class ExcecaoCompilador extends Exception {
     private static final long serialVersionUID = 1L;
